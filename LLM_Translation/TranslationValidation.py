@@ -32,7 +32,7 @@ class CtoRustTranslator:
         completion = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant. Please only output the code without code blocks."},
+                {"role": "system", "content": "You are a helpful assistant. Please only output the code without code blocks or any other formatting."},
                 {
                     "role": "user",
                     "content": "Translate the following C code to Rust: " + f" {c_code}"
@@ -63,7 +63,44 @@ class CtoRustTranslator:
             print(f"Compilation failed for {self.output_path}.")
             print(f"Error message: {e.stderr}")
             return False
-        
+
+c_folder_path = "C_programs"
+rust_folder_path = "Rust_programs_compiled"
+# Create a directory for failed programs and move them there
+failed_programs_dir = "Rust_programs_not_compiled"
+api_key = "your_api_key_here"
+
+start_time = time.time()
+compile_success_programs = []
+compile_fail_programs = []
+for c_file_name in os.listdir(c_folder_path):
+    # Skip non-.c files
+    if not c_file_name.endswith('.c'):
+        continue
+
+    rs_file_name = os.path.splitext(c_file_name)[0] + ".rs"
+    # Skip if Rust file already exists in Rust_programs_compiled folder
+    if os.path.exists(os.path.join(rust_folder_path, rs_file_name)):
+        print(f"Skipping {c_file_name} - Rust file already exists")
+        continue
+    print(f"Translating {c_file_name} to Rust...")
+    input_path = os.path.join(c_folder_path, c_file_name)
+    output_path = os.path.join(rust_folder_path, rs_file_name)
+    ctoRustTranslator = CtoRustTranslator(input_path, output_path, api_key)
+    ctoRustTranslator.translate_c_to_rust()
+    compiled_successfully = ctoRustTranslator.check_rust_file_compiles()
+    if (compiled_successfully):
+        compile_success_programs.append(rs_file_name)
+    else:
+        compile_fail_programs.append(rs_file_name)
+
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"Elapsed time: {elapsed_time:.2f} seconds")
+
+print(f"compile_success_programs: {compile_success_programs}")
+print(f"compile_fail_programs: {compile_fail_programs}")
+
 def move_failed_programs(compile_fail_programs, source_dir, dest_dir):
     # Create destination directory if it doesn't exist
     if not os.path.exists(dest_dir):
@@ -73,48 +110,42 @@ def move_failed_programs(compile_fail_programs, source_dir, dest_dir):
     for program in compile_fail_programs:
         source_path = os.path.join(source_dir, program)
         dest_path = os.path.join(dest_dir, program)
+        # If file exists in destination, remove it before moving
+        if os.path.exists(dest_path):
+            os.remove(dest_path)
+            print(f"Removed existing {program} from destination")
+
         try:
             shutil.move(source_path, dest_path)
             print(f"Moved {program} to {dest_dir}")
         except Exception as e:
             print(f"Error moving {program}: {str(e)}")
 
-c_folder_path = "C_programs"
-rust_folder_path = "Rust_programs_compiled"
-# Create a directory for failed programs and move them there
-failed_programs_dir = "Rust_programs_not_compiled"
-api_key = "put_your_openai_api_key_here"
+move_failed_programs(compile_fail_programs, rust_folder_path, failed_programs_dir)
 
-start_time = time.time()
-compile_success_programs = []
-compile_fail_programs = []
-for c_file_name in os.listdir(c_folder_path):
-    rs_file_name = os.path.splitext(c_file_name)[0] + ".rs"
-    # Skip if Rust file already exists in either folder
-    if (os.path.exists(os.path.join(rust_folder_path, rs_file_name)) or 
-        os.path.exists(os.path.join(failed_programs_dir, rs_file_name))):
-        print(f"Skipping {c_file_name} - Rust file already exists")
-        continue
+def delete_duplicate_programs(compiled_dir, not_compiled_dir):
+    """
+    Delete files from not_compiled_dir if they already exist in compiled_dir
+    
+    Args:
+        compiled_dir (str): Path to directory with compiled Rust programs
+        not_compiled_dir (str): Path to directory with not compiled Rust programs
+    """
+    # Get list of files in compiled directory
+    compiled_files = set(os.listdir(compiled_dir))
+    
+    # Check each file in not_compiled directory
+    for filename in os.listdir(not_compiled_dir):
+        if filename in compiled_files:
+            file_path = os.path.join(not_compiled_dir, filename)
+            try:
+                os.remove(file_path)
+                print(f"Deleted duplicate file {filename} from {not_compiled_dir}")
+            except Exception as e:
+                print(f"Error deleting {filename}: {str(e)}")
 
-    input_path = os.path.join(c_folder_path, c_file_name)
-    output_path = os.path.join(rust_folder_path, rs_file_name)
-    ctoRustTranslator = CtoRustTranslator(input_path, output_path, api_key)
-    ctoRustTranslator.translate_c_to_rust()
-    compiled_successfully = ctoRustTranslator.check_rust_file_compiles()
-    if (compiled_successfully):
-        compile_success_programs.append(c_file_name)
-    else:
-        compile_fail_programs.append(c_file_name)
-
-end_time = time.time()
-elapsed_time = end_time - start_time
-print(f"Elapsed time: {elapsed_time:.2f} seconds")
-
-print(f"compile_success_programs: {compile_success_programs}")
-print(f"compile_fail_programs: {compile_fail_programs}")
-
-move_failed_programs(compile_fail_programs, c_folder_path, failed_programs_dir)
-
+# Delete duplicates from not_compiled directory
+delete_duplicate_programs(rust_folder_path, failed_programs_dir)
 
 
 # # Check compilation of all existing Rust files

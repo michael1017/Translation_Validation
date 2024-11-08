@@ -1,4 +1,10 @@
-use std::cmp::{min, max};
+fn min(x: i32, y: i32) -> i32 {
+    if x < y { x } else { y }
+}
+
+fn max(x: i32, y: i32) -> i32 {
+    if x > y { x } else { y }
+}
 
 fn cmpfunc(a: &i32, b: &i32) -> std::cmp::Ordering {
     a.cmp(b)
@@ -25,18 +31,18 @@ fn f_gold(n: usize) -> i32 {
 }
 
 fn f_filled(n: usize) -> i32 {
-    // Implement your function here
+    // Placeholder for the correct implementation
     0
 }
 
 fn main() {
     let mut n_success = 0;
-    let param0 = vec![84, 78, 9, 73, 4, 53, 85, 38, 39, 6];
-    for &value in &param0 {
-        if f_filled(value) == f_gold(value) {
+    let param0 = [84, 78, 9, 73, 4, 53, 85, 38, 39, 6];
+    for i in 0..len(&param0) {
+        if f_filled(param0[i] as usize) == f_gold(param0[i] as usize) {
             n_success += 1;
         }
         break;
     }
-    println!("#Results: {}, {}", n_success, len(&param0));
+    println!("#Results: {}", n_success);
 }
