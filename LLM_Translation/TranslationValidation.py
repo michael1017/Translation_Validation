@@ -3,12 +3,14 @@ from openai import OpenAI
 import subprocess
 import os
 import time
+import ollama
 
 class CtoRustTranslator:
-    def __init__(self, input_path, output_path, api_key):
+    def __init__(self, input_path, output_path, api_key, model):
         self.input_path = input_path
         self.output_path = output_path
         self.api_key = api_key
+        self.model = model
 
     def process_c_file(self):
         """
@@ -28,19 +30,32 @@ class CtoRustTranslator:
 
     def translate_c_to_rust(self):
         c_code = self.process_c_file()
-        client = OpenAI(api_key=self.api_key)
-        completion = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant. Please only output the code without code blocks or any other formatting."},
-                {
-                    "role": "user",
-                    "content": "Translate the following C code to Rust: " + f" {c_code}"
-                }
-            ]
-        )
+        rust_code = ""
+        if model == "gpt-4o":
+            client = OpenAI(api_key=self.api_key)
+            completion = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant. Please only output the code without code blocks or any other formatting."},
+                    {
+                        "role": "user",
+                        "content": "Translate the following C code to Rust: " + f" {c_code}"
+                    }
+                ]
+            )
 
-        rust_code = completion.choices[0].message.content
+            rust_code = completion.choices[0].message.content
+        else:
+            response = ollama.chat(
+                model='llama3', 
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant. Please only output the code without code blocks or any other formatting."},
+                    {
+                        "role": "user",
+                        "content": "Translate the following C code to Rust: " + f" {c_code}",
+                    },
+                ])
+            rust_code = response['message']['content']
         self.save_rust_code(rust_code)
     
     def check_rust_file_compiles(self):
@@ -69,6 +84,7 @@ rust_folder_path = "Rust_programs_compiled"
 # Create a directory for failed programs and move them there
 failed_programs_dir = "Rust_programs_not_compiled"
 api_key = "your_api_key_here"
+model = "llama"
 
 start_time = time.time()
 compile_success_programs = []
@@ -86,7 +102,7 @@ for c_file_name in os.listdir(c_folder_path):
     print(f"Translating {c_file_name} to Rust...")
     input_path = os.path.join(c_folder_path, c_file_name)
     output_path = os.path.join(rust_folder_path, rs_file_name)
-    ctoRustTranslator = CtoRustTranslator(input_path, output_path, api_key)
+    ctoRustTranslator = CtoRustTranslator(input_path, output_path, api_key, model)
     ctoRustTranslator.translate_c_to_rust()
     compiled_successfully = ctoRustTranslator.check_rust_file_compiles()
     if (compiled_successfully):
@@ -157,7 +173,7 @@ delete_duplicate_programs(rust_folder_path, failed_programs_dir)
 #     if rs_file_name.endswith('.rs'):
 #         input_path = "" # Not needed for just compilation check
 #         output_path = os.path.join(rust_folder_path, rs_file_name)
-#         rustValidator = CtoRustTranslator(input_path, output_path, api_key)
+#         rustValidator = CtoRustTranslator(input_path, output_path, api_key, model)
 #         compiled_successfully = rustValidator.check_rust_file_compiles()
 #         if compiled_successfully:
 #             rust_compile_success.append(rs_file_name)
