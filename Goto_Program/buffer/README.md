@@ -1,0 +1,10 @@
+## Changes
+Remove main function in C and Rust
+
+## Commands
+
+## Note
+res1=&dynamic_object (00001001 00000000 00000000 00000000 00000000 00000000 00000000 00000000)
+res2=((buffer_t *)NULL) + 60 (00000000 00000000 00000000 00000000 00000000 00000000 00000000 00111100)
+
+Looks like we 
