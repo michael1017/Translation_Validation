@@ -28,35 +28,46 @@ class CtoRustTranslator:
         with open(self.output_path, 'w') as file:
             file.write(rust_code)
 
-    def translate_c_to_rust(self):
+    def translate_c_to_rust(self, error_message=""):
         c_code = self.process_c_file()
         rust_code = ""
-        if model == "gpt-4o":
-            client = OpenAI(api_key=self.api_key)
-            completion = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant. Please only output the code without code blocks or any other formatting."},
+
+        messages = [
+                    {"role": "system", "content": "You are a helpful assistant. Strictly output Rust code only without any text description or code blocks like \"```rust\" or any other formatting."},
                     {
                         "role": "user",
                         "content": "Translate the following C code to Rust: " + f" {c_code}"
                     }
                 ]
+        if error_message != "":
+            messages = [
+                    {"role": "system", "content": "You are a helpful assistant. Strictly output Rust code only without any text description or code blocks like \"```rust\" or any other formatting."},
+                    {
+                        "role": "user",
+                        "content": "Translated rust code has the following compilation errors: " + f" {error_message}. \n" + "Please try translating the following C code to Rust again: " + f" {c_code}"
+                    }
+                ]
+            
+        if model == "gpt-4o":
+            client = OpenAI(api_key=self.api_key)
+            completion = client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages
             )
 
             rust_code = completion.choices[0].message.content
         else:
             response = ollama.chat(
-                model='llama3', 
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant. Please only output the code without code blocks or any other formatting."},
-                    {
-                        "role": "user",
-                        "content": "Translate the following C code to Rust: " + f" {c_code}",
-                    },
-                ])
+                model='llama3.1:latest', 
+                messages=messages
+                )
             rust_code = response['message']['content']
-        self.save_rust_code(rust_code)
+        self.save_rust_code(self.llm_output_post_process(rust_code))
+
+    def llm_output_post_process(self, rust_code):
+        rust_code = rust_code.replace("```rust", "")
+        rust_code = rust_code.replace("```", "")
+        return rust_code
     
     def check_rust_file_compiles(self):
         # Add the Rust installation directory to the PATH
@@ -66,25 +77,25 @@ class CtoRustTranslator:
         try:
             # Compile the Rust file using rustc
             result = subprocess.run(
-                ['rustc', '--crate-type', 'bin', self.output_path],
+                ['rustc', '--error-format=short', '-A','warnings', '--crate-type', 'bin', self.output_path],
                 capture_output=True,
                 text=True,
                 check=True
             )
             print(f"File {self.output_path} compiled successfully!")
-            return True
+            return True, ""
         except subprocess.CalledProcessError as e:
             # If compilation fails, print the error
             print(f"Compilation failed for {self.output_path}.")
             print(f"Error message: {e.stderr}")
-            return False
+            return False, e.stderr
 
 c_folder_path = "C_programs"
 rust_folder_path = "Rust_programs_compiled"
 # Create a directory for failed programs and move them there
 failed_programs_dir = "Rust_programs_not_compiled"
-api_key = "your_api_key_here"
-model = "llama"
+api_key = "api_key_here"
+model = "ollama"
 
 start_time = time.time()
 compile_success_programs = []
@@ -104,11 +115,24 @@ for c_file_name in os.listdir(c_folder_path):
     output_path = os.path.join(rust_folder_path, rs_file_name)
     ctoRustTranslator = CtoRustTranslator(input_path, output_path, api_key, model)
     ctoRustTranslator.translate_c_to_rust()
-    compiled_successfully = ctoRustTranslator.check_rust_file_compiles()
+    compiled_successfully, error_message = ctoRustTranslator.check_rust_file_compiles()
     if (compiled_successfully):
         compile_success_programs.append(rs_file_name)
     else:
-        compile_fail_programs.append(rs_file_name)
+        num_llm_self_optimization = 0
+        while num_llm_self_optimization < 3:
+            print(f"self_optimization step {num_llm_self_optimization}: ")
+            # reprompt llm to fix compilation error
+            ctoRustTranslator.translate_c_to_rust(error_message)
+            compiled_successfully, new_error_message = ctoRustTranslator.check_rust_file_compiles()
+            if (compiled_successfully):
+                compile_success_programs.append(rs_file_name)
+                break
+            error_message = new_error_message
+            num_llm_self_optimization+=1
+        if (compiled_successfully == False):
+            compile_fail_programs.append(rs_file_name)
+            
 
 end_time = time.time()
 elapsed_time = end_time - start_time
@@ -162,25 +186,5 @@ def delete_duplicate_programs(compiled_dir, not_compiled_dir):
 
 # Delete duplicates from not_compiled directory
 delete_duplicate_programs(rust_folder_path, failed_programs_dir)
-
-
-# # Check compilation of all existing Rust files
-# print("\nChecking compilation of all Rust files...")
-# rust_compile_success = []
-# rust_compile_fail = []
-
-# for rs_file_name in os.listdir(rust_folder_path):
-#     if rs_file_name.endswith('.rs'):
-#         input_path = "" # Not needed for just compilation check
-#         output_path = os.path.join(rust_folder_path, rs_file_name)
-#         rustValidator = CtoRustTranslator(input_path, output_path, api_key, model)
-#         compiled_successfully = rustValidator.check_rust_file_compiles()
-#         if compiled_successfully:
-#             rust_compile_success.append(rs_file_name)
-#         else:
-#             rust_compile_fail.append(rs_file_name)
-
-# print(f"\nExisting Rust files that compile successfully: {rust_compile_success}")
-# print(f"Existing Rust files that fail to compile: {rust_compile_fail}")
 
 
