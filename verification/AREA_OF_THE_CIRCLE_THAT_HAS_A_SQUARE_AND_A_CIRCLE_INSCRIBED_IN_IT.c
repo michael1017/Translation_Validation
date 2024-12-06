@@ -9,6 +9,6 @@
 #include <math.h>
 
 float f_gold_c ( int a ) {
-  float area = (M_PI * (float )a * (float)a )/4.0;
+  float area = ( M_PI * a * a ) / 4.0;
   return area;
 }

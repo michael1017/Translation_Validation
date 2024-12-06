@@ -3,9 +3,9 @@ ROOT := /home/pamusuo/Fall2024/cs560/Translation_Validation/verification
 
 # TODO: Update these variables
 # Define variables for file paths (update these as needed)
-C_FILE := $(ROOT)/rotate.c
-R_FILE := $(ROOT)/rotate.rs
-COMP_FILE := $(ROOT)/comp_prog_rotate.c
+C_FILE := $(ROOT)/libtree.c
+R_FILE := $(ROOT)/libtree.rs
+COMP_FILE := $(ROOT)/comp_prog_libtree.c
 
 # Directories
 BUILD_DIR := $(ROOT)/build
@@ -16,7 +16,7 @@ REPORTS_DIR := $(BUILD_DIR)/reports
 H_ENTRY = main
 
 # Extra CBMC flags to be passed during CBMC analysis
-H_CBMCFLAGS = --nondet-static --verbosity 9 --unwind 1
+H_CBMCFLAGS = --nondet-static --verbosity 9 --unwind 1 --unwindset is_ascending_order_c.0:6 -unwindset is_ascending_order_rust.0:6
 
 # Extra header defintiions to be passed during compilation
 H_DEF =
