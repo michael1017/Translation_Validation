@@ -1,3 +1,4 @@
 .DS_Store
 verification/build/
 *.txt
+LLM_Translation/build/
