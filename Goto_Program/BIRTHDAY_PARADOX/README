@@ -1,0 +1,18 @@
+## Changes
+Remove main function in C
+
+## Commands
+sh compile.sh BIRTHDAY_PARADOX
+cbmc --no-standard-checks main_goto
+
+## Notes
+Failed
+```
+p=-1.310710e+5 (11000000 11111111 11111111 11110000 00000000 00000000 00000000 00000001)
+res1=0 (00000000 00000000 00000000 00000000)
+res2=+NAN (01111111 11110000 00000000 00000000 00000000 00000000 00000000 00000001)
+```
+
+functions have different interface
+
+After unifiy the the interface, program runs forever even with --unwind

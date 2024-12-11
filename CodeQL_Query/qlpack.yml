@@ -1,4 +1,0 @@
-name: my-codeql-queries
-version: 1.0.0
-libraryPathDependencies:
-  - codeql/cpp-all

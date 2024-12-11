@@ -1,0 +1,13 @@
+## Changes
+Remove main function in C
+
+## Commands
+sh compile.sh BIN_PACKING_PROBLEM_MINIMIZE_NUMBER_OF_USED_BINS
+cbmc --no-standard-checks main_goto
+
+## Notes
+Halt.
+Loop exists in program.
+
+Success when --unwind 10
+(But it takes a while)
