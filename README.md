@@ -1,5 +1,20 @@
 # Translation_Validation
 
+## Installing
+Currently we provide a Dockerfile for building on Linux amd64 environment. This image contains essential tools for C and Rust program verification with CBMC.
+
+Besides, we also provide pre-built image on dockerhub
+
+Pull image from dockerhub
+```
+docker pull mike1017/c2rust_translation_validation:latest
+```
+
+Create docker container
+```
+docker run -v <PROJECT_SRC>:/workdir -it --rm mike1017/c2rust_translation_validation
+```
+
 ## Folder Layout
 
 ### GOTO_Convert
