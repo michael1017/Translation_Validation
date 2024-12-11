@@ -4,6 +4,7 @@ import subprocess
 import os
 import time
 import ollama
+from dotenv import load_dotenv
 
 class CtoRustTranslator:
     def __init__(self, input_path, output_path, api_key, model):
@@ -75,12 +76,13 @@ class CtoRustTranslator:
         os.environ["PATH"] += os.pathsep + rust_path
 
         try:
-            # Compile the Rust file using rustc
+            # Compile the Rust file using rustc in the /build folder
             result = subprocess.run(
-                ['rustc', '--error-format=short', '-A','warnings', '--crate-type', 'bin', self.output_path],
+                ['rustc', '--error-format=short', '-A','warnings', '--crate-type', 'bin', os.path.join('..', self.output_path)],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                cwd='build/'
             )
             print(f"File {self.output_path} compiled successfully!")
             return True, ""
@@ -94,8 +96,17 @@ c_folder_path = "C_programs"
 rust_folder_path = "Rust_programs_compiled"
 # Create a directory for failed programs and move them there
 failed_programs_dir = "Rust_programs_not_compiled"
-api_key = "api_key_here"
-model = "ollama"
+
+# Load environment variables from .env file
+load_dotenv()
+api_key = os.environ.get("OPENAI_API_KEY")
+model = os.environ.get("MODEL")
+if model is None:
+    print("Error: MODEL is not specified. Please set the MODEL environment variable.")
+    exit(1)
+elif model == "gpt-4o" and api_key is None:
+    print("Error: OPENAI_API_KEY is not specified. Please set the OPENAI_API_KEY environment variable.")
+    exit(1)
 
 start_time = time.time()
 compile_success_programs = []
@@ -119,7 +130,7 @@ for c_file_name in os.listdir(c_folder_path):
     if (compiled_successfully):
         compile_success_programs.append(rs_file_name)
     else:
-        num_llm_self_optimization = 0
+        num_llm_self_optimization = 3
         while num_llm_self_optimization < 3:
             print(f"self_optimization step {num_llm_self_optimization}: ")
             # reprompt llm to fix compilation error
