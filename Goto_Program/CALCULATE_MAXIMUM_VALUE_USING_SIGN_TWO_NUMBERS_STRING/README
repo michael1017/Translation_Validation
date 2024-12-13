@@ -1,0 +1,10 @@
+## Changes
+Remove main function in C
+
+## Commands
+sh compile.sh CALCULATE_MAXIMUM_VALUE_USING_SIGN_TWO_NUMBERS_STRING
+cbmc --no-standard-checks main_goto
+
+## Notes
+Halt
+Work if --unwind 2

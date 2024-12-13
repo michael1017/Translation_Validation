@@ -14,5 +14,9 @@ res2=+NAN (01111111 11110000 00000000 00000000 00000000 00000000 00000000 000000
 ```
 
 functions have different interface
+```
+fn f_gold(p: f64) -> f64 
+int f_gold_c ( double p )
+```
 
 After unifiy the the interface, program runs forever even with --unwind

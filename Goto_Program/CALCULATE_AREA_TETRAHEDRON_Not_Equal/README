@@ -1,0 +1,19 @@
+## Changes
+Remove main function in C
+
+## Commands
+sh compile.sh CALCULATE_AREA_TETRAHEDRON
+cbmc --no-standard-checks main_goto
+
+## Notes
+Halt.
+Double Type exists in program.
+
+Return Error with  __CPROVER_assume(side == 789527);
+Reason:
+```
+// side=789527 (00000000 00001100 00001100 00010111)
+// res1=5.288087e+16 (01000011 01100111 01111011 11011011 11010010 10010111 10000001 10111111)
+// res2=5.587290e+16 (01000011 01101000 11010000 00000011 10001101 00100011 01111111 10011001)
+// res=0 (00000000 00000000 00000000 00000000)
+```
